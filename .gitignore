@@ -1,0 +1,33 @@
+cat > ~/krate/.gitignore << 'EOF'
+# binary
+krate
+
+# Go build cache
+*.exe
+*.out
+*.test
+*.prof
+
+# Go module cache
+vendor/
+
+# env files
+.env
+*.env
+
+# editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# krate runtime data (generated at runtime)
+/var/lib/krate/
+
+# logs
+*.log
+EOF

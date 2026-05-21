@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>krate — container dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: #0d1117;
+    color: #e6edf3;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: #58a6ff;
+    letter-spacing: 2px;
+  }
+
+  .logo span { color: #3fb950; }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #3fb950;
+    display: inline-block;
+    margin-right: 8px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .daemon-status { font-size: 13px; color: #8b949e; }
+
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .stat-card .label { font-size: 12px; color: #8b949e; margin-bottom: 8px; }
+  .stat-card .value { font-size: 32px; font-weight: 700; color: #58a6ff; }
+
+  section { margin-bottom: 32px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .section-title { font-size: 16px; font-weight: 600; color: #e6edf3; }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .btn:hover { opacity: 0.8; }
+  .btn-primary { background: #238636; color: #fff; }
+  .btn-danger  { background: #da3633; color: #fff; padding: 4px 12px; font-size: 12px; }
+  .btn-ghost   { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #8b949e;
+    border-bottom: 1px solid #30363d;
+    background: #0d1117;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  td {
+    padding: 12px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid #21262d;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1c2128; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .badge-green { background: #1a3a2a; color: #3fb950; border: 1px solid #2ea043; }
+  .badge-blue  { background: #1a2a3a; color: #58a6ff; border: 1px solid #1f6feb; }
+
+  .empty {
+    text-align: center;
+    padding: 48px;
+    color: #8b949e;
+    font-size: 14px;
+  }
+
+  /* modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 24px;
+    width: 480px;
+  }
+
+  .modal h3 { margin-bottom: 20px; color: #e6edf3; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; color: #8b949e; margin-bottom: 6px; }
+
+  .form-group input, .form-group select {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #e6edf3;
+    font-family: inherit;
+    font-size: 13px;
+  }
+
+  .form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: #58a6ff;
+  }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  .log-box {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 16px;
+    font-size: 12px;
+    color: #3fb950;
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .id-cell { font-family: monospace; color: #58a6ff; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">krate<span>://</span></div>
+  <div class="daemon-status">
+    <span class="status-dot"></span>
+    daemon @ localhost:6060
+  </div>
+</header>
+
+<main>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="label">RUNNING CONTAINERS</div>
+      <div class="value" id="stat-containers">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">PULLED IMAGES</div>
+      <div class="value" id="stat-images">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">DAEMON</div>
+      <div class="value" style="font-size:18px;padding-top:8px;color:#3fb950">ONLINE</div>
+    </div>
+  </div>
+
+  <!-- containers -->
+  <section>
+    <div class="section-header">
+      <div class="section-title">Running Containers</div>
+      <button class="btn btn-primary" onclick="openRunModal()">+ Run Container</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Container ID</th>
+          <th>Image</th>
+          <th>Command</th>
+          <th>Hostname</th>
+          <th>Uptime</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="containers-tbody">
+        <tr><td colspan="7" class="empty">No running containers</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- images -->
+  <section>
+    <div class="section-header">
+      <div class="section-title">Images</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Size</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="images-tbody">
+        <tr><td colspan="3" class="empty">No images pulled</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<!-- run modal -->
+<div class="modal-overlay" id="run-modal">
+  <div class="modal">
+    <h3>Run New Container</h3>
+    <div class="form-group">
+      <label>IMAGE</label>
+      <select id="f-image">
+        <option value="alpine">alpine</option>
+        <option value="alpine:3.18">alpine:3.18</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>COMMAND</label>
+      <input id="f-cmd" value="/bin/sh" placeholder="/bin/sh"/>
+    </div>
+    <div class="form-group">
+      <label>HOSTNAME</label>
+      <input id="f-hostname" value="krate-box" placeholder="krate-box"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>MEMORY (MB)</label>
+        <input id="f-memory" type="number" value="100"/>
+      </div>
+      <div class="form-group">
+        <label>CPU (%)</label>
+        <input id="f-cpu" type="number" value="50"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeRunModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="runContainer()">Run</button>
+    </div>
+  </div>
+</div>
+
+<!-- logs modal -->
+<div class="modal-overlay" id="logs-modal">
+  <div class="modal" style="width:600px">
+    <h3>Container Logs</h3>
+    <div class="log-box" id="log-content">No logs available</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeLogsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:6060'
+
+function uptime(startedAt) {
+  const diff = Math.floor((Date.now() - new Date(startedAt)) / 1000)
+  if (diff < 60) return diff + 's'
+  if (diff < 3600) return Math.floor(diff/60) + 'm ' + (diff%60) + 's'
+  return Math.floor(diff/3600) + 'h ' + Math.floor((diff%3600)/60) + 'm'
+}
+
+async function fetchContainers() {
+  try {
+    const res = await fetch(API + '/containers')
+    const data = await res.json()
+    const tbody = document.getElementById('containers-tbody')
+    document.getElementById('stat-containers').textContent = data.length
+
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">No running containers</td></tr>'
+      return
+    }
+
+    tbody.innerHTML = data.map(c => `
+      <tr>
+        <td class="id-cell">${c.id.slice(0,12)}</td>
+        <td>${c.image}</td>
+        <td>${c.cmd ? c.cmd.join(' ') : '-'}</td>
+        <td>${c.hostname}</td>
+        <td>${uptime(c.started_at)}</td>
+        <td><span class="badge badge-green">running</span></td>
+        <td>
+          <button class="btn btn-danger" onclick="stopContainer('${c.id}')">Stop</button>
+        </td>
+      </tr>
+    `).join('')
+  } catch(e) {
+    console.error('daemon unreachable', e)
+  }
+}
+
+async function fetchImages() {
+  try {
+    const res = await fetch(API + '/images')
+    const data = await res.json()
+    const tbody = document.getElementById('images-tbody')
+    document.getElementById('stat-images').textContent = data.length
+
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="3" class="empty">No images pulled</td></tr>'
+      return
+    }
+
+    tbody.innerHTML = data.map(i => `
+      <tr>
+        <td>${i.Name}</td>
+        <td>${i.Size}</td>
+        <td><span class="badge badge-blue">ready</span></td>
+      </tr>
+    `).join('')
+  } catch(e) {}
+}
+
+async function stopContainer(id) {
+  await fetch(API + '/containers/stop/' + id, { method: 'DELETE' })
+  fetchContainers()
+}
+
+async function runContainer() {
+  const body = {
+    image:     document.getElementById('f-image').value,
+    cmd:       [document.getElementById('f-cmd').value],
+    hostname:  document.getElementById('f-hostname').value,
+    memory_mb: parseInt(document.getElementById('f-memory').value),
+    cpu_pct:   parseInt(document.getElementById('f-cpu').value),
+  }
+  await fetch(API + '/containers/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  closeRunModal()
+  setTimeout(fetchContainers, 500)
+}
+
+function openRunModal()  { document.getElementById('run-modal').classList.add('open') }
+function closeRunModal() { document.getElementById('run-modal').classList.remove('open') }
+function closeLogsModal(){ document.getElementById('logs-modal').classList.remove('open') }
+
+function refresh() {
+  fetchContainers()
+  fetchImages()
+}
+
+refresh()
+setInterval(refresh, 3000)
+</script>
+</body>
+</html>
