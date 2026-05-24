@@ -61,6 +61,8 @@ sudo ./krate daemon
 | GET | /images | List pulled images |
 
 ## Architecture
+```text
+
 krate/
 ├── cmd/              # CLI entrypoint (Cobra)
 ├── internal/
@@ -71,6 +73,10 @@ krate/
 │   ├── state/        # container state persistence
 │   └── daemon/       # HTTP API server
 └── web/              # dashboard UI
+
+```
+
+---
 
 ## Requirements
 
