@@ -14,15 +14,15 @@ Krate integrates core Linux kernel virtualization primitives into a unified, low
 
 ```mermaid
 graph TD
-    A[krate run CLI] -->|1. Resolve Image| B(Pull Alpine tar.gz & Extract to templates)
-    A -->|2. Mount Storage| C(Mount OverlayFS: read-only template lower + writable upper/work)
+    A[krate run CLI] -->|1. Resolve Image| B(Pull Alpine tar.gz and Extract to templates)
+    A -->|2. Mount Storage| C(Mount OverlayFS: read-only lower + writable upper/work)
     A -->|3. Fork Process| D[Fork /proc/self/exe as __child__ with Cloneflags]
-    D -->|CLONE_NEWUTS | NEWPID | NEWNS | NEWNET| E[Child Namespace Process]
-    E -->|4. Limit Resources| F(Write cgroups v2 cpu.max & memory.max)
-    E -->|5. Bind Dev & Chroot| G(Bind mount host /dev, syscall.Chroot, syscall.Chdir)
+    D -->|CLONE_NEWUTS + NEWPID + NEWNS + NEWNET| E[Child Namespace Process]
+    E -->|4. Limit Resources| F(Write cgroups v2 cpu.max and memory.max)
+    E -->|5. Bind Dev + Chroot| G(Bind mount /dev, syscall.Chroot, syscall.Chdir)
     E -->|6. Mount Core FS| H(Mount proc, sysfs, tmpfs inside jail)
-    E -->|7. Network Setup| I(Bring loopback 'lo' interface up)
-    E -->|8. Execute Binary| J[Exec User Command e.g., /bin/sh]
+    E -->|7. Network Setup| I(Bring loopback lo interface up)
+    E -->|8. Execute Binary| J[Exec User Command e.g. /bin/sh]
 ```
 
 ### Virtualization Primitives
